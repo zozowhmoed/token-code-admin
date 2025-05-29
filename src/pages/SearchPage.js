@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { getUserByEmail, createUserCode, verifyUserCode } from '../services/codeService';
+import { getUserByEmail, getCodeByUserId, createUserCode, verifyUserCode } from '../services/codeService';
 import { 
   TextField, 
   Button, 
@@ -14,8 +14,6 @@ import {
   DialogContentText,
   DialogTitle
 } from '@mui/material';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '../services/firebase';
 
 const SearchPage = () => {
   const [email, setEmail] = useState('');
@@ -41,13 +39,11 @@ const SearchPage = () => {
     try {
       const user = await getUserByEmail(email);
       if (user) {
-        // التحقق مما إذا كان لدى المستخدم كود مميز
-        const codeRef = doc(db, 'userCodes', user.id);
-        const codeSnap = await getDoc(codeRef);
+        const code = await getCodeByUserId(user.id);
         
         setUserData({
           ...user,
-          uniqueCode: codeSnap.exists() ? codeSnap.data().code : null,
+          uniqueCode: code,
           hasVerifiedCode: user.hasVerifiedCode || false
         });
       } else {

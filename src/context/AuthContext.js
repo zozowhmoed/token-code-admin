@@ -8,27 +8,35 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const auth = getAuth();
 
-  // كلمة المرور الموحدة للنظام
   const SYSTEM_PASSWORD = "ZoZowhmoed1234!@#$%";
+  const SECURITY_QUESTION = "ما هو اسم والدك؟";
+  const SECURITY_ANSWER = "محمد";
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      // يعامل جميع الزوار كمستخدمين مجهولين
-      setCurrentUser({ isAnonymous: true });
+      setCurrentUser(user || { isAnonymous: true });
       setLoading(false);
     });
     return unsubscribe;
   }, [auth]);
 
-  // دالة التحقق من كلمة المرور
-  const verifyAccess = (enteredPassword) => {
-    return enteredPassword === SYSTEM_PASSWORD;
+  const login = async (password, answer) => {
+    if (password !== SYSTEM_PASSWORD) {
+      throw new Error("كلمة المرور غير صحيحة");
+    }
+    
+    if (answer !== SECURITY_ANSWER) {
+      throw new Error("إجابة السؤال الأمني غير صحيحة");
+    }
+    
+    return true;
   };
 
   const value = {
     currentUser,
-    verifyAccess,
-    isAdmin: true // يمكنك تغيير هذا حسب الحاجة
+    login,
+    securityQuestion: SECURITY_QUESTION,
+    isAdmin: true
   };
 
   return (

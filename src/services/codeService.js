@@ -1,8 +1,6 @@
 import { db } from './firebase';
 import { 
   doc, 
-  setDoc, 
-  updateDoc, 
   collection, 
   query, 
   where, 
@@ -42,31 +40,40 @@ export const getUserByEmail = async (email) => {
   }
 };
 
+export const getCodeByUserId = async (userId) => {
+  try {
+    const codeRef = doc(db, 'userCodes', userId);
+    const codeSnap = await getDoc(codeRef);
+    
+    if (codeSnap.exists()) {
+      return codeSnap.data().code;
+    }
+    return null;
+  } catch (error) {
+    console.error("Error getting user code:", error);
+    throw error;
+  }
+};
+
 export const createUserCode = async (userId) => {
   try {
     const code = generateSecureCode();
     
     await runTransaction(db, async (transaction) => {
-      const userRef = doc(db, 'users', userId);
-      const userSnap = await transaction.get(userRef);
-      
-      if (!userSnap.exists()) {
-        throw new Error("User not found");
-      }
-      
-      // تحديث الكود في collection المستخدمين
-      transaction.update(userRef, {
-        uniqueCode: code,
-        hasVerifiedCode: false,
-        codeGeneratedAt: serverTimestamp()
-      });
-      
       // إنشاء وثيقة في collection أكواد المستخدمين
       const codeRef = doc(db, 'userCodes', userId);
       transaction.set(codeRef, {
         code: code,
         createdAt: serverTimestamp(),
         userId: userId
+      });
+      
+      // تحديث الكود في collection المستخدمين
+      const userRef = doc(db, 'users', userId);
+      transaction.update(userRef, {
+        uniqueCode: code,
+        hasVerifiedCode: false,
+        codeGeneratedAt: serverTimestamp()
       });
     });
     
@@ -82,20 +89,6 @@ export const updateUserCode = async (userId) => {
     const code = generateSecureCode();
     
     await runTransaction(db, async (transaction) => {
-      const userRef = doc(db, 'users', userId);
-      const userSnap = await transaction.get(userRef);
-      
-      if (!userSnap.exists()) {
-        throw new Error("User not found");
-      }
-      
-      // تحديث الكود في collection المستخدمين
-      transaction.update(userRef, {
-        uniqueCode: code,
-        hasVerifiedCode: false,
-        codeGeneratedAt: serverTimestamp()
-      });
-      
       // تحديث الكود في collection أكواد المستخدمين
       const codeRef = doc(db, 'userCodes', userId);
       transaction.set(codeRef, {
@@ -103,6 +96,14 @@ export const updateUserCode = async (userId) => {
         updatedAt: serverTimestamp(),
         userId: userId
       }, { merge: true });
+      
+      // تحديث الكود في collection المستخدمين
+      const userRef = doc(db, 'users', userId);
+      transaction.update(userRef, {
+        uniqueCode: code,
+        hasVerifiedCode: false,
+        codeGeneratedAt: serverTimestamp()
+      });
     });
     
     return { code };
@@ -117,16 +118,19 @@ export const verifyUserCode = async (userId, enteredCode) => {
     let verificationResult = false;
     
     await runTransaction(db, async (transaction) => {
-      const userRef = doc(db, 'users', userId);
-      const userSnap = await transaction.get(userRef);
+      // الحصول على الكود من collection أكواد المستخدمين
+      const codeRef = doc(db, 'userCodes', userId);
+      const codeSnap = await transaction.get(codeRef);
       
-      if (!userSnap.exists()) {
-        throw new Error("User not found");
+      if (!codeSnap.exists()) {
+        throw new Error("User code not found");
       }
       
-      const userData = userSnap.data();
+      const codeData = codeSnap.data();
       
-      if (userData.uniqueCode === enteredCode) {
+      if (codeData.code === enteredCode) {
+        // تحديث حالة التحقق في collection المستخدمين
+        const userRef = doc(db, 'users', userId);
         transaction.update(userRef, {
           hasVerifiedCode: true,
           codeVerifiedAt: serverTimestamp()
@@ -207,8 +211,8 @@ export const getCodeInfo = async (userId) => {
     const codeData = codeSnap.exists() ? codeSnap.data() : null;
     
     return {
-      code: userData.uniqueCode || codeData?.code || null,
-      generatedAt: userData.codeGeneratedAt?.toDate() || codeData?.createdAt?.toDate() || null,
+      code: codeData?.code || null,
+      generatedAt: codeData?.createdAt?.toDate() || null,
       verified: userData.hasVerifiedCode || false,
       verifiedAt: userData.codeVerifiedAt?.toDate() || null
     };

@@ -1,11 +1,13 @@
-import React from 'react';
-import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const PrivateRoute = ({ children }) => {
-  const { currentUser } = useAuth();
-  
-  return currentUser ? children : <Navigate to="/login" replace />;
+  const { currentUser, isAdmin } = useAuth();
+
+  if (!currentUser || (currentUser.isAnonymous && !isAdmin)) {
+    return null; // أو يمكنك عرض رسالة تحميل
+  }
+
+  return children;
 };
 
 export default PrivateRoute;

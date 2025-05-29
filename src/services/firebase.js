@@ -1,4 +1,3 @@
-
 import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 
@@ -12,11 +11,7 @@ const firebaseConfig = {
   measurementId: "G-GH3D6EMB6L"
 };
 
-// تهيئة التطبيق
 const app = initializeApp(firebaseConfig);
-
-// تهيئة Firestore
 const db = getFirestore(app);
 
-// تصدير الخدمات
 export { db };

@@ -3,8 +3,7 @@ import {
   getAllUsersWithCodes, 
   updateUserCode, 
   createUserCode,
-  verifyUserCode,
-  getCodeInfo
+  verifyUserCode
 } from '../services/codeService';
 import { 
   DataGrid, 

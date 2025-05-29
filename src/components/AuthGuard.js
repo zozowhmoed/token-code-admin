@@ -1,22 +1,14 @@
-import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import { useAuth } from '../context/AuthContext';
+import { Navigate, Outlet } from 'react-router-dom';
 
-const AuthGuard = ({ children }) => {
-  const navigate = useNavigate();
-  const auth = getAuth();
+const AuthGuard = () => {
+  const { currentUser } = useAuth();
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (!user) {
-        navigate('/login');
-      }
-    });
+  if (!currentUser) {
+    return <Navigate to="/login" replace />;
+  }
 
-    return () => unsubscribe();
-  }, [navigate, auth]);
-
-  return children;
+  return <Outlet />;
 };
 
 export default AuthGuard;
